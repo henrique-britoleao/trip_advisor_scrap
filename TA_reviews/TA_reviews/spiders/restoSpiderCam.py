@@ -65,20 +65,58 @@ class RestoPerso(scrapy.Spider):
             yield response.follow(url=next_page_reviews, callback=self.parse_resto)
 
     def parse_review(self, response):
+        '''
+        Parses through a Trip Advisor review page and yields useful iformation 
+        about the review.
+
+        Returns
+        -------
+        review_item: TAReview object
+            includes the relevant information extracted from the review
+        '''
+
         # TO DO: create "review" scrapy Item in items.py
 
+
         self.review_nb += 1
-        review_item = {}
+        review_item = TAReview()
         review_item['review_url'] = response.request.url
 
-        # get review ID to indicate the right xpath (otherwise long reviews with empty lines are not recognized)
-        review_item['review_id'] = response.xpath('//div[@class="reviewSelector"]/@data-reviewid').extract_first()
-        xpath = '//div[@data-reviewid="' + review_item['review_id'] + '"]/div/div/div/div'
+        # get review ID (else long reviews with empty lines not recognized)
+        review_id = response.xpath(
+            '//div[@class="reviewSelector"]/@data-reviewid'
+        ).extract_first()
+        xpath = '//div[@data-reviewid="' + review_id + '"]/div'
 
-        # once we have the xpath for this specific review (id), get title, content, date and overall customer rating
-        review_item['review_title'] = response.xpath(xpath).xpath('div/a/span/text()').extract_first()
-        review_item['review_content'] = response.xpath(xpath).xpath('div[@data-prwidget-name="reviews_text_summary_hsx"]/div/p/text()').extract()
-        review_item['review_date'] = response.xpath(xpath).xpath('div[@data-prwidget-name="reviews_stay_date_hsx"]/text()').extract_first()
-        review_item['rating'] = response.xpath(xpath).xpath('div[@class="rating reviewItemInline"]/span/@class').extract_first()
+        # with specific review ID, get useful review information
+        review_xpath = xpath + '/div[@class="ui_column is-9"]' # review data
+        review_item['review_title'] = response.xpath(
+            review_xpath + '//div[@class="quote"]/a/span/text()'
+        ).extract_first()
+        review_item['review_content'] = response.xpath(
+            review_xpath + '//div[@class="entry"]/p/text()'
+        ).extract_first()
+        review_item['review_date'] = response.xpath(
+            review_xpath + 
+            '//div[@data-prwidget-name="reviews_stay_date_hsx"]/text()'
+        ).extract_first()
+        review_item['review_rating'] = response.xpath(
+            review_xpath + 
+            '//div[@class="rating reviewItemInline"]/span/@class'
+        ).extract_first()
+        review_item['review_likes'] = response.xpath(
+            review_xpath + 
+            '//span[@class="numHelp emphasizeWithColor"]/text()'
+        ).extract_first()
+
+        # with specific review ID, get user data
+        user_path = xpath + '/div[@class="ui_column is-2"]' # user data
+        user_data = response.xpath(
+            user_path + '//span[@class="badgetext"]/text()'
+        ).extract()
+        review_item['user_number_reviews'] = user_data[0]
+
+        if len(user_data)==2:
+            review_item['user_number_likes'] = user_data[1]
         
         yield review_item
