@@ -9,7 +9,7 @@ class RestoPerso(scrapy.Spider):
         self.main_nb = 0
         self.resto_nb = 0
         self.review_nb = 0
-        self.max_reviews = 30
+        self.max_reviews = 100
         self.max_pages = 2
 
     def start_requests(self):
@@ -17,15 +17,12 @@ class RestoPerso(scrapy.Spider):
         yield scrapy.Request(url=url, callback=self.parse)
 
     def parse(self, response):
-        item = {}
-
         # get each restaurant url and parse it
         xpath = '//*[@id="component_2"]/div//div/span/div[1]/div[2]/div[1]/div/span/a/@href'
         restaurant_urls = response.xpath(xpath).extract()
         for restaurant_url in restaurant_urls:
-            item['restaurant_url'] = restaurant_url
             yield response.follow(url=restaurant_url, callback=self.parse_resto)
-
+    
         # go to the next page of restaurants
         xpath = '//*[@id="EATERY_LIST_CONTENTS"]/div/div/a'
         next_page = response.xpath(xpath).css('::attr(href)').extract()[-1]
@@ -35,16 +32,12 @@ class RestoPerso(scrapy.Spider):
     
     def parse_resto(self, response):
         
-        # doesn't work for now but the goal is to scrape restaurant data if we're on the first page of reviews
-        # then iterate through all review pages (cf end of the function) and scrape only review urls each time 
-        current_page = 1
-        #current_page = response.xpath('//div[@class="pageNumbers"]/a[@class="pageNum first current "]/@data-page-number').extract_first()
-        #if current_page == None:
-        #    current_page = response.xpath('//div[@class="pageNumbers"]/a[@class="pageNum current "]/@data-page-number').extract_first()
+        current_page = response.xpath('//div[@class="pageNumbers"]/a[@class="pageNum first current "]/@data-page-number').extract_first()
+        if current_page == None:
+            current_page = response.xpath('//div[@class="pageNumbers"]/a[@class="pageNum current "]/@data-page-number').extract_first()
         
         # get restaurant info (url, name, rating, cuisine, regimes, price range...)
         # TO DO: create "Resto" item in items.py
-        # Issue with details cuisine etc. > not always the same fields. Not sure we can use the dictionary technique below if we create an item.
         if int(current_page) == 1:
             self.resto_nb += 1
             resto_item = {}
@@ -67,12 +60,11 @@ class RestoPerso(scrapy.Spider):
             yield response.follow(url=url_review, callback=self.parse_review)    
 
         # doesn't work > goal is to go to the next page of reviews (only get 5 by restaurant so far)
-        #next_page_reviews = response.xpath('//a[@class="nav next ui_button primary"]/@data-page-number').extract_first()
-        #if self.review_nb < self.max_reviews and next_page_reviews is not None:
-        #    yield response.follow(url=next_page_reviews, callback=self.parse_resto)
+        next_page_reviews = response.xpath('//a[@class="nav next ui_button primary"]/@href').extract_first()
+        if self.review_nb < self.max_reviews:
+            yield response.follow(url=next_page_reviews, callback=self.parse_resto)
 
     def parse_review(self, response):
-        # works fine
         # TO DO: create "review" scrapy Item in items.py
 
         self.review_nb += 1
@@ -90,4 +82,3 @@ class RestoPerso(scrapy.Spider):
         review_item['rating'] = response.xpath(xpath).xpath('div[@class="rating reviewItemInline"]/span/@class').extract_first()
         
         yield review_item
-
