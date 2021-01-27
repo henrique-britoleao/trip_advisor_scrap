@@ -6,7 +6,15 @@
 import scrapy
 
 
-class TaReviewsItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class TAReview(scrapy.Item):
+    """Used to parse reviews from Trip Advisor"""
+    review_url = scrapy.Field()
+    # TODO : change implementation of ID in restoSpiderCam
+    # id = scrapy.Field() #not necessarily useful information 
+    review_title = scrapy.Field()
+    review_content = scrapy.Field()
+    review_date = scrapy.Field()
+    review_rating = scrapy.Field()
+    review_likes = scrapy.Field()
+    user_number_reviews = scrapy.Field()
+    user_number_likes = scrapy.Field()
