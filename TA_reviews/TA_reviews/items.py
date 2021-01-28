@@ -9,7 +9,6 @@ import scrapy
 class TAReview(scrapy.Item):
     """Used to parse reviews from Trip Advisor"""
     review_url = scrapy.Field()
-    # TODO : change implementation of ID in restoSpiderCam
     # id = scrapy.Field() #not necessarily useful information 
     review_title = scrapy.Field()
     review_content = scrapy.Field()
