@@ -1,4 +1,5 @@
 import scrapy
+from TA_reviews.items import TAReview
 
 class RestoPerso(scrapy.Spider):
     name = "RestoTAPerso"
@@ -15,15 +16,15 @@ class RestoPerso(scrapy.Spider):
     def start_requests(self):
         url = 'https://www.tripadvisor.co.uk/Restaurants-g191259-Greater_London_England.html'
         yield scrapy.Request(url=url, callback=self.parse)
-
+    
     def parse(self, response):
-        item = {}
+        # item = {}
 
         # get each restaurant url and parse it
         xpath = '//*[@id="component_2"]/div//div/span/div[1]/div[2]/div[1]/div/span/a/@href'
         restaurant_urls = response.xpath(xpath).extract()
         for restaurant_url in restaurant_urls:
-            item['restaurant_url'] = restaurant_url
+            # item['restaurant_url'] = restaurant_url
             yield response.follow(url=restaurant_url, callback=self.parse_resto)
 
         # go to the next page of restaurants
@@ -31,6 +32,7 @@ class RestoPerso(scrapy.Spider):
         next_page = response.xpath(xpath).css('::attr(href)').extract()[-1]
         next_page_number = response.xpath(xpath).css('::attr(data-page-number)').extract()[-1]
         if int(next_page_number) < self.max_pages:
+
             yield response.follow(url=next_page, callback=self.parse_resto)
     
     def parse_resto(self, response):
@@ -61,15 +63,18 @@ class RestoPerso(scrapy.Spider):
 
             yield resto_item
 
-        # get review urls 
+        # get review from current page 
         urls_review = response.xpath('//div[@class="reviewSelector"]/div/div/div/a/@href').extract()
         for url_review in urls_review:
-            yield response.follow(url=url_review, callback=self.parse_review)    
+            yield response.follow(url=url_review, callback=self.parse_review)
 
-        # doesn't work > goal is to go to the next page of reviews (only get 5 by restaurant so far)
-        #next_page_reviews = response.xpath('//a[@class="nav next ui_button primary"]/@data-page-number').extract_first()
-        #if self.review_nb < self.max_reviews and next_page_reviews is not None:
-        #    yield response.follow(url=next_page_reviews, callback=self.parse_resto)
+        # move to next page
+        next_page_number = response.xpath('//a[@class="nav next ui_button primary"]/@data-page-number').extract_first()
+        if next_page_number is not None and self.review_nb < self.max_reviews:
+            # retrieve url of next page
+            next_page_url = response.xpath('//a[@class="nav next ui_button primary"]/@href').extract_first()
+            # get reviews from next page
+            yield response.follow(url=next_page_url, callback=self.parse_resto)
 
     def parse_review(self, response):
         '''
