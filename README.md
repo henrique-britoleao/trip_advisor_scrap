@@ -1,3 +1,3 @@
-# trip_advisor_scrap
-Implements a spider to crawl trip advisor looking for restaurant reviews. 
-# TO-DO
+# Capgemini Datacamp: Deliverable 1 
+
+We implemented a spider to crawl Trip Advisor looking for restaurant reviews.
