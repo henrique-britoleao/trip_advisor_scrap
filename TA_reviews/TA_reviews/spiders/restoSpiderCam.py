@@ -71,8 +71,6 @@ class RestoPerso(scrapy.Spider):
         '''
         current_page = get_current_page(response)
         # if first page, add restaurant information 
-        # TODO: implement Item Retaurant; add more information
-        # TODO: look for more items to add 
         if current_page == 1:
             resto_item = TAResto()
             xpath_name = '//div[@data-test-target="restaurant-detail-info"]/div' \

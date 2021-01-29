@@ -1,4 +1,5 @@
-# Restaurant Review Scraping
+
+# Capgemini Datacamp: Deliverable 1 
 
 ## Table of contents
 * [General info](#general-info)
