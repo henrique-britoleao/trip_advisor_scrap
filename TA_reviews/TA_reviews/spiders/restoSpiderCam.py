@@ -79,8 +79,8 @@ class RestoPerso(scrapy.Spider):
                          '/h1/text()'
             xpath_rating = '//a[@href="#REVIEWS"]/svg/@title'
 
-            xpath_keys = '//div[@class="_3UjHBXYa"]/div[@class="_14zKtJkz"]/text()'
-            xpath_details = '//div[@class="_3UjHBXYa"]/div[@class="_1XLfiSsv"]' \
+            xpath_keys = '//div[@class="_3UjHBXYa"]//div[@class="_14zKtJkz"]/text()'
+            xpath_details = '//div[@class="_3UjHBXYa"]//div[@class="_1XLfiSsv"]' \
                             '/text()'
 
             resto_item['resto_url'] = response.request.url
