@@ -1,7 +1,12 @@
 import scrapy
 from TA_reviews.items import TAReview
+from TA_reviews.utils.get_current_page import get_current_page
 
 class RestoPerso(scrapy.Spider):
+    '''
+    Spider to crawl through a Trip Advisor city page and scrap restaurant 
+    reviews.
+    '''
     name = "RestoTAPerso"
 
     def __init__(self, *args, **kwargs): 
@@ -13,17 +18,21 @@ class RestoPerso(scrapy.Spider):
         self.max_review_pages = 50 # 10 reviews per page
 
     def start_requests(self):
-        '''
-        # TODO
-        '''
+        '''Submits first request to Spider to crawl'''
         # TODO format
         url = 'https://www.tripadvisor.co.uk/Restaurants-g191259-Greater_London_England.html'
         
         yield scrapy.Request(url=url, callback=self.parse)
     
-    def parse(self, response):
+    def parse(self, response):  
         '''
-        # TODO
+        Parses through a Trip Advisor city page. Yields Requests for each 
+        restaurant connected to the city.
+
+        Yields
+        ------
+        request: scrapy Request object
+            request of a restaurant.
         '''
         # TODO format
         # get restaurant urls in current page
@@ -42,20 +51,21 @@ class RestoPerso(scrapy.Spider):
             # parse next page
             yield response.follow(url=next_resto_page_url, callback=self.parse)
     
-    def parse_resto(self, response, pages_parsed):
+    def parse_resto(self, response, pages_parsed):         
         '''
-        # TODO
+        Parses through a Trip Advisor restaurant page. Yields useful 
+        information about the restaurant. Yields Requests for each review 
+        connected to the restaurant.
+
+        Yields
+        ------
+        resto_item: 
+            includes the relevant information extracted from the restaurant.
+        request: scrapy Request object
+            request of a review.
         '''
         # TODO format
-        # get current page TODO: put it in utils 
-        xpath = '//div[@class="pageNumbers"]/a/@class'
-
-        is_first_page = response.xpath(xpath).extract_first()=='pageNum first current '
-        if not is_first_page:
-            xpath = '//div[@class="pageNumbers"]/a[@class="pageNum current "]/@data-page-number'
-            current_page = int(response.xpath(xpath).extract_first())
-        else:
-            current_page = 1
+        current_page = get_current_page(response)
         
         # if first page, add restaurant information 
         # TODO: implement Item Retaurant; add more information
@@ -93,8 +103,8 @@ class RestoPerso(scrapy.Spider):
         Parses through a Trip Advisor review page and yields useful iformation 
         about the review.
 
-        Returns
-        -------
+        Yields
+        ------
         review_item: TAReview object
             includes the relevant information extracted from the review
         '''
