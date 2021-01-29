@@ -14,8 +14,8 @@ class RestoPerso(scrapy.Spider):
 
         self.page_nb = 1 
         self.review_page_nb = 1 
-        self.max_page = 1 # 30 restaurants per page
-        self.max_review_pages = 5 # 10 reviews per page
+        self.max_page = 4 # 30 restaurants per page
+        self.max_review_pages = 50 # 10 reviews per page
 
     def start_requests(self):
         '''Submits first request to Spider to crawl'''
