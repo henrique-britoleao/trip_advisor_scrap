@@ -1,5 +1,5 @@
 import scrapy
-from TA_reviews.items import TAReview
+from TA_reviews.items import TAReview, TAResto
 from TA_reviews.utils.get_current_page import get_current_page
 
 class RestoPerso(scrapy.Spider):
@@ -15,7 +15,7 @@ class RestoPerso(scrapy.Spider):
         self.page_nb = 1 
         self.review_page_nb = 1 
         self.max_page = 1 # 30 restaurants per page
-        self.max_review_pages = 50 # 10 reviews per page
+        self.max_review_pages = 5 # 10 reviews per page
 
     def start_requests(self):
         '''Submits first request to Spider to crawl'''
@@ -56,7 +56,7 @@ class RestoPerso(scrapy.Spider):
             # parse next page
             yield response.follow(url=next_resto_page_url, callback=self.parse)
     
-    def parse_resto(self, response, pages_parsed):         
+    def parse_resto(self, response, pages_parsed, resto_name=None):         
         '''
         Parses through a Trip Advisor restaurant page. Yields useful 
         information about the restaurant. Yields Requests for each review 
@@ -70,25 +70,28 @@ class RestoPerso(scrapy.Spider):
             request of a review.
         '''
         current_page = get_current_page(response)
-
         # if first page, add restaurant information 
         # TODO: implement Item Retaurant; add more information
         # TODO: look for more items to add 
         if current_page == 1:
-            resto_item = {}
+            resto_item = TAResto()
             xpath_name = '//div[@data-test-target="restaurant-detail-info"]/div' \
                          '/h1/text()'
             xpath_rating = '//a[@href="#REVIEWS"]/svg/@title'
+
+            xpath_keys = '//div[@class="_3UjHBXYa"]/div[@class="_14zKtJkz"]/text()'
+            xpath_details = '//div[@class="_3UjHBXYa"]/div[@class="_1XLfiSsv"]' \
+                            '/text()'
+
             resto_item['resto_url'] = response.request.url
             resto_item['resto_name'] = response.xpath(xpath_name).extract()
             resto_item['resto_rating'] = response.xpath(xpath_rating).extract()
-            
-            details = response.xpath('//div[@class="_3UjHBXYa"]')
-            keys = details.xpath('//div[@class="_14zKtJkz"]/text()').extract()
-            values = details.xpath('//div[@class="_1XLfiSsv"]/text()').extract()
 
-            details_info = dict(zip(keys, values))
-            resto_item.update(details_info)
+            resto_item['resto_keys'] = response.xpath(xpath_keys).extract()
+            resto_item['resto_details'] = response.xpath(xpath_details).extract()
+
+            # define variable to use as a key on the reviews
+            resto_name = response.xpath(xpath_name).extract()  
 
             yield resto_item
 
@@ -96,7 +99,8 @@ class RestoPerso(scrapy.Spider):
         xpath_review_url = '//div[@class="reviewSelector"]/div/div/div/a/@href'
         urls_review = response.xpath(xpath_review_url).extract()
         for url_review in urls_review:
-                yield response.follow(url=url_review, callback=self.parse_review)    
+                yield response.follow(url=url_review, callback=self.parse_review,
+                                      cb_kwargs={'resto_name':resto_name})    
         
         # move to next page
         xpath_next = '//a[@class="nav next ui_button primary"]/@data-page-number'
@@ -108,9 +112,10 @@ class RestoPerso(scrapy.Spider):
             # parse next page
             yield response.follow(url=next_rev_page_url,
                                   callback=self.parse_resto,
-                                  cb_kwargs={'pages_parsed':pages_parsed+1})
+                                  cb_kwargs={'pages_parsed':pages_parsed+1,
+                                             'resto_name':resto_name})
 
-    def parse_review(self, response):
+    def parse_review(self, response, resto_name):
         '''
         Parses through a Trip Advisor review page and yields useful iformation 
         about the review.
@@ -120,9 +125,9 @@ class RestoPerso(scrapy.Spider):
         review_item: TAReview object
             includes the relevant information extracted from the review
         '''
-        # TODO add restaurant key, to merge the two databases
-        # TODO potentially add more keys
         review_item = TAReview()
+
+        review_item['resto_name'] = resto_name
         review_item['review_url'] = response.request.url
 
         # get review ID (else long reviews with empty lines not recognized)
