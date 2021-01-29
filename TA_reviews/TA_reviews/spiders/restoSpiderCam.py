@@ -16,8 +16,8 @@ class RestoPerso(scrapy.Spider):
         '''
         # TODO
         '''
-        # TODO format
-        url = 'https://www.tripadvisor.co.uk/Restaurants-g191259-Greater_London_England.html'
+        url = 'https://www.tripadvisor.co.uk/Restaurants-g191259-Greater_London_' \
+              'England.html'
         
         yield scrapy.Request(url=url, callback=self.parse)
     
@@ -25,20 +25,25 @@ class RestoPerso(scrapy.Spider):
         '''
         # TODO
         '''
-        # TODO format
         # get restaurant urls in current page
-        xpath = '//*[@id="component_2"]/div//div/span/div[1]/div[2]/div[1]/div/span/a/@href'
+        xpath = '//*[@id="component_2"]/div//div/span/div[1]/div[2]/div[1]/div/' \
+                'span/a/@href'
         restaurant_urls = response.xpath(xpath).extract()
         for restaurant_url in restaurant_urls:
-            yield response.follow(url=restaurant_url, callback=self.parse_resto, cb_kwargs={'pages_parsed':1})
+            yield response.follow(url=restaurant_url, callback=self.parse_resto,
+                                  cb_kwargs={'pages_parsed':1})
 
         # move to next page
-        next_resto_page_number = response.xpath('//*[@id="EATERY_LIST_CONTENTS"]//a[@class="nav next rndBtn ui_button primary taLnk"]/@data-page-number').extract_first()
+        xpath_next_resto = '//*[@id="EATERY_LIST_CONTENTS"]//a[@class="nav next ' \
+                           'rndBtn ui_button primary taLnk"]'
+        next_resto_page_number = response.xpath(xpath_next_resto+'/@data-page-number'
+                                                ).extract_first()
 
         if next_resto_page_number is not None and self.page_nb < self.max_page:
             self.page_nb += 1
             # retrieve url of next page
-            next_resto_page_url = response.xpath('//*[@id="EATERY_LIST_CONTENTS"]//a[@class="nav next rndBtn ui_button primary taLnk"]/@href').extract_first()
+            next_resto_page_url = response.xpath(xpath_next_resto+'/@href'
+                                                 ).extract_first()
             # parse next page
             yield response.follow(url=next_resto_page_url, callback=self.parse)
     
@@ -46,25 +51,27 @@ class RestoPerso(scrapy.Spider):
         '''
         # TODO
         '''
-        # TODO format
         # get current page TODO: put it in utils 
         xpath = '//div[@class="pageNumbers"]/a/@class'
 
-        is_first_page = response.xpath(xpath).extract_first()=='pageNum first current '
+        is_first_page = response.xpath(xpath).extract_first() == 'pageNum first current '
         if not is_first_page:
-            xpath = '//div[@class="pageNumbers"]/a[@class="pageNum current "]/@data-page-number'
+            xpath = '//div[@class="pageNumbers"]/a[@class="pageNum current "]' \
+                    '/@data-page-number'
             current_page = int(response.xpath(xpath).extract_first())
         else:
             current_page = 1
-        
         # if first page, add restaurant information 
         # TODO: implement Item Retaurant; add more information
         # TODO: look for more items to add 
         if current_page == 1:
             resto_item = {}
+            xpath_name = '//div[@data-test-target="restaurant-detail-info"]/div' \
+                         '/h1/text()'
+            xpath_rating = '//a[@href="#REVIEWS"]/svg/@title'
             resto_item['resto_url'] = response.request.url
-            resto_item['resto_name'] = response.xpath('//div[@data-test-target="restaurant-detail-info"]/div/h1/text()').extract()
-            resto_item['resto_rating'] = response.xpath('//a[@href="#REVIEWS"]/svg/@title').extract()
+            resto_item['resto_name'] = response.xpath(xpath_name).extract()
+            resto_item['resto_rating'] = response.xpath(xpath_rating).extract()
             
             details = response.xpath('//div[@class="_3UjHBXYa"]')
             keys = details.xpath('//div[@class="_14zKtJkz"]/text()').extract()
@@ -76,17 +83,22 @@ class RestoPerso(scrapy.Spider):
             yield resto_item
 
         # get review urls
-        urls_review = response.xpath('//div[@class="reviewSelector"]/div/div/div/a/@href').extract()
+        xpath_review_url = '//div[@class="reviewSelector"]/div/div/div/a/@href'
+        urls_review = response.xpath(xpath_review_url).extract()
         for url_review in urls_review:
                 yield response.follow(url=url_review, callback=self.parse_review)    
         
         # move to next page
-        next_review_page_number = response.xpath('//a[@class="nav next ui_button primary"]/@data-page-number').extract_first()
-        if next_review_page_number is not None and pages_parsed < self.max_review_pages:
+        xpath_next = '//a[@class="nav next ui_button primary"]/@data-page-number'
+        next_rev_page_nb = response.xpath(xpath_next).extract_first()
+        if next_rev_page_nb is not None and pages_parsed < self.max_review_pages:
             # retrieve url of next page
-            next_review_page_url = response.xpath('//a[@class="nav next ui_button primary"]/@href').extract_first()
+            xpath_next_url = '//a[@class="nav next ui_button primary"]/@href'
+            next_rev_page_url = response.xpath(xpath_next_url).extract_first()
             # parse next page
-            yield response.follow(url=next_review_page_url, callback=self.parse_resto, cb_kwargs={'pages_parsed':pages_parsed+1})
+            yield response.follow(url=next_rev_page_url,
+                                  callback=self.parse_resto,
+                                  cb_kwargs={'pages_parsed':pages_parsed+1})
 
     def parse_review(self, response):
         '''
