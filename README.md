@@ -19,7 +19,6 @@ To run this project, install it locally:
 
 ```terminal
 pip install -r requirements.txt
-cd ../trip_advisor_scrap/TA_reviews/TA_reviews/spiders/
-python restoSpiderCam.py
+scrapy ReviewRestoTA --overwrite-output=TA_reviews/scrapped_data/scrapped_data.jl
 ```
 Data from webscraping will be in ../trip_advisor_scrap/TA_reviews/TA_reviews/scrapped_data.
