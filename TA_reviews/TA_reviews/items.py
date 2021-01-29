@@ -5,12 +5,10 @@
 
 import scrapy
 
-
 class TAReview(scrapy.Item):
     """Used to parse reviews from Trip Advisor"""
+    resto_name = scrapy.Field()
     review_url = scrapy.Field()
-    # TODO : change implementation of ID in restoSpiderCam
-    # id = scrapy.Field() #not necessarily useful information 
     review_title = scrapy.Field()
     review_content = scrapy.Field()
     review_date = scrapy.Field()
@@ -18,3 +16,11 @@ class TAReview(scrapy.Item):
     review_likes = scrapy.Field()
     user_number_reviews = scrapy.Field()
     user_number_likes = scrapy.Field()
+
+class TAResto(scrapy.Item):
+    """Used to parse restaurants from Trip Advisor"""
+    resto_url = scrapy.Field()
+    resto_name = scrapy.Field()
+    resto_rating = scrapy.Field()
+    resto_keys = scrapy.Field()
+    resto_details = scrapy.Field()

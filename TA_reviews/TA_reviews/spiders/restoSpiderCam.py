@@ -1,85 +1,131 @@
 import scrapy
+from TA_reviews.items import TAReview, TAResto
+from TA_reviews.utils.get_current_page import get_current_page
 
 class RestoPerso(scrapy.Spider):
+    '''
+    Spider to crawl through a Trip Advisor city page and scrap restaurant 
+    reviews.
+    '''
     name = "RestoTAPerso"
 
     def __init__(self, *args, **kwargs): 
         super(RestoPerso, self).__init__(*args, **kwargs)
 
-        self.main_nb = 0
-        self.resto_nb = 0
-        self.review_nb = 0
-        self.max_reviews = 100
-        self.max_pages = 2
+        self.page_nb = 1 
+        self.review_page_nb = 1 
+        self.max_page = 4 # 30 restaurants per page
+        self.max_review_pages = 50 # 10 reviews per page
 
     def start_requests(self):
-        url = 'https://www.tripadvisor.co.uk/Restaurants-g191259-Greater_London_England.html'
+        '''Submits first request to Spider to crawl'''
+        url = 'https://www.tripadvisor.co.uk/Restaurants-g191259-Greater' \
+              '_London_England.html'
+        
         yield scrapy.Request(url=url, callback=self.parse)
+    
+    def parse(self, response):  
+        '''
+        Parses through a Trip Advisor city page. Yields Requests for each 
+        restaurant connected to the city.
 
-    def parse(self, response):
-        # get each restaurant url and parse it
-        xpath = '//*[@id="component_2"]/div//div/span/div[1]/div[2]/div[1]/div/span/a/@href'
+        Yields
+        ------
+        request: scrapy Request object
+            request of a restaurant.
+        '''
+        # get restaurant urls in current page
+        xpath = '//*[@id="component_2"]/div//div/span/div[1]/div[2]/div[1]/div/' \
+                'span/a/@href'
         restaurant_urls = response.xpath(xpath).extract()
         for restaurant_url in restaurant_urls:
-            yield response.follow(url=restaurant_url, callback=self.parse_resto)
-    
-        # go to the next page of restaurants
-        xpath = '//*[@id="EATERY_LIST_CONTENTS"]/div/div/a'
-        next_page = response.xpath(xpath).css('::attr(href)').extract()[-1]
-        next_page_number = response.xpath(xpath).css('::attr(data-page-number)').extract()[-1]
-        if int(next_page_number) < self.max_pages:
-            yield response.follow(url=next_page, callback=self.parse_resto)
-    
-    def parse_resto(self, response):
-        
-        current_page = response.xpath('//div[@class="pageNumbers"]/a[@class="pageNum first current "]/@data-page-number').extract_first()
-        if current_page == None:
-            current_page = response.xpath('//div[@class="pageNumbers"]/a[@class="pageNum current "]/@data-page-number').extract_first()
-        
-        # get restaurant info (url, name, rating, cuisine, regimes, price range...)
-        # TO DO: create "Resto" item in items.py
-        if int(current_page) == 1:
-            self.resto_nb += 1
-            resto_item = {}
-            resto_item['resto_url'] = response.request.url
-            resto_item['resto_name'] = response.xpath('//div[@data-test-target="restaurant-detail-info"]/div/h1/text()').extract()
-            resto_item['resto_rating'] = response.xpath('//a[@href="#REVIEWS"]/svg/@title').extract()
-            
-            details = response.xpath('//div[@class="_3UjHBXYa"]')
-            keys = details.xpath('//div[@class="_14zKtJkz"]/text()').extract()
-            values = details.xpath('//div[@class="_1XLfiSsv"]/text()').extract()
+            yield response.follow(url=restaurant_url, callback=self.parse_resto,
+                                  cb_kwargs={'pages_parsed':1})
 
-            details_info = dict(zip(keys, values))
-            resto_item.update(details_info)
+        # move to next page
+        xpath_next_resto = '//*[@id="EATERY_LIST_CONTENTS"]//a[@class="nav next ' \
+                           'rndBtn ui_button primary taLnk"]'
+        next_resto_page_number = response.xpath(xpath_next_resto+'/@data-page-number'
+                                                ).extract_first()
+
+        if next_resto_page_number is not None and self.page_nb < self.max_page:
+            self.page_nb += 1
+            # retrieve url of next page
+            next_resto_page_url = response.xpath(xpath_next_resto+'/@href'
+                                                 ).extract_first()
+            # parse next page
+            yield response.follow(url=next_resto_page_url, callback=self.parse)
+    
+    def parse_resto(self, response, pages_parsed, resto_name=None):         
+        '''
+        Parses through a Trip Advisor restaurant page. Yields useful 
+        information about the restaurant. Yields Requests for each review 
+        connected to the restaurant.
+
+        Yields
+        ------
+        resto_item: 
+            includes the relevant information extracted from the restaurant.
+        request: scrapy Request object
+            request of a review.
+        '''
+        current_page = get_current_page(response)
+        # if first page, add restaurant information 
+        if current_page == 1:
+            resto_item = TAResto()
+            xpath_name = '//div[@data-test-target="restaurant-detail-info"]/div' \
+                         '/h1/text()'
+            xpath_rating = '//a[@href="#REVIEWS"]/svg/@title'
+
+            xpath_keys = '//div[@class="_3UjHBXYa"]//div[@class="_14zKtJkz"]/text()'
+            xpath_details = '//div[@class="_3UjHBXYa"]//div[@class="_1XLfiSsv"]' \
+                            '/text()'
+
+            resto_item['resto_url'] = response.request.url
+            resto_item['resto_name'] = response.xpath(xpath_name).extract()
+            resto_item['resto_rating'] = response.xpath(xpath_rating).extract()
+
+            resto_item['resto_keys'] = response.xpath(xpath_keys).extract()
+            resto_item['resto_details'] = response.xpath(xpath_details).extract()
+
+            # define variable to use as a key on the reviews
+            resto_name = response.xpath(xpath_name).extract()  
 
             yield resto_item
 
-        # get review urls 
-        urls_review = response.xpath('//div[@class="reviewSelector"]/div/div/div/a/@href').extract()
+        # get review urls
+        xpath_review_url = '//div[@class="reviewSelector"]/div/div/div/a/@href'
+        urls_review = response.xpath(xpath_review_url).extract()
         for url_review in urls_review:
-            yield response.follow(url=url_review, callback=self.parse_review)    
+                yield response.follow(url=url_review, callback=self.parse_review,
+                                      cb_kwargs={'resto_name':resto_name})    
+        
+        # move to next page
+        xpath_next = '//a[@class="nav next ui_button primary"]/@data-page-number'
+        next_rev_page_nb = response.xpath(xpath_next).extract_first()
+        if next_rev_page_nb is not None and pages_parsed < self.max_review_pages:
+            # retrieve url of next page
+            xpath_next_url = '//a[@class="nav next ui_button primary"]/@href'
+            next_rev_page_url = response.xpath(xpath_next_url).extract_first()
+            # parse next page
+            yield response.follow(url=next_rev_page_url,
+                                  callback=self.parse_resto,
+                                  cb_kwargs={'pages_parsed':pages_parsed+1,
+                                             'resto_name':resto_name})
 
-        # doesn't work > goal is to go to the next page of reviews (only get 5 by restaurant so far)
-        next_page_reviews = response.xpath('//a[@class="nav next ui_button primary"]/@href').extract_first()
-        if self.review_nb < self.max_reviews:
-            yield response.follow(url=next_page_reviews, callback=self.parse_resto)
-
-    def parse_review(self, response):
+    def parse_review(self, response, resto_name):
         '''
         Parses through a Trip Advisor review page and yields useful iformation 
         about the review.
 
-        Returns
-        -------
+        Yields
+        ------
         review_item: TAReview object
             includes the relevant information extracted from the review
         '''
-
-        # TO DO: create "review" scrapy Item in items.py
-
-
-        self.review_nb += 1
         review_item = TAReview()
+
+        review_item['resto_name'] = resto_name
         review_item['review_url'] = response.request.url
 
         # get review ID (else long reviews with empty lines not recognized)
