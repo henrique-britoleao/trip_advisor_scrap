@@ -40,7 +40,7 @@ Performed:
 * Data cleaning
 * Data exploration
 * Tokenization, stemming, and lemmatization 
-
+* TD-IFD 
 
 ### Technologies 
 * Python version: 3..
