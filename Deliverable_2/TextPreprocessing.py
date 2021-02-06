@@ -5,8 +5,7 @@ from nltk import word_tokenize
 from nltk.corpus import stopwords
 import re
 import string
-import cld2
-from utils.processing_utils import get_char_sentence, get_char_corpus
+from Utils.processing_utils import get_char_sentence, get_char_corpus
 
 
 # preprocessing class
