@@ -3,23 +3,21 @@ import pandas as pd
 import numpy as np 
 from nltk import word_tokenize
 from nltk.corpus import stopwords
+from nltk.stem import LancasterStemmer, PorterStemmer
 import re
 import string
 import cld2
 from utils.processing_utils import get_char_sentence, get_char_corpus
 
-
-# preprocessing class
+# PREPROCESSING TEXT
 class TextPreprocessor:
 
     def __init__(self, df_to_clean, column_to_clean='review_content', 
-                 chars=string.ascii_lowercase + string.digits + " ", 
-                 lang=['ENGLISH', 'Unknown', 'ZHUANG']):
+                 chars=string.ascii_lowercase + string.digits + " "):
         self.df_to_clean = df_to_clean
         self.column_to_clean = column_to_clean
         self.corpus = self.corpus_creator()
         self.chars = chars
-        self.lang = lang
 
     def corpus_creator(self):
         '''
@@ -60,27 +58,6 @@ class TextPreprocessor:
         sentence = re.sub(r"\'m", " am", sentence)
 
         return sentence
-    
-    #def language_filter(self):
-      #  '''
-      #  # TODO
-      #  '''
-      #  if type(self.lang) is not list:
-      #      raise TypeError(f'lang must be a list, but is a {type(self.lang)}')
-      #  else:
-      #      langs = np.array([cld2.detect(review)[2] for review in self.corpus], 
-      #                  dtype=object) # get list of langs detected in phrase
-      #      # create filter
-       #     filt = langs[:,0,0] == self.lang[0]
-       #     for language in self.lang: # iterate over list of languages
-       #         filt = filt | (langs[:,0,0] == language)
-            
-            # make sure no secong language included
-       #     filt = filt & (langs[:,1,0] == 'Unknown')
-            
-       #     filtered_corpus = np.array(self.corpus)[filt]
-            
-        #    return list(filtered_corpus)
 
     def accent_transformer(self):
         '''
@@ -135,8 +112,6 @@ class TextPreprocessor:
         self.corpus = self.lowercase_transformer()
         # call decontractor
         self.corpus = [self.decontractor(review) for review in self.corpus]
-        # call language check 
-        #self.corpus = self.language_filter()
         # call accent_tranformer
         self.corpus = self.accent_transformer()
         # call character filter
@@ -145,3 +120,18 @@ class TextPreprocessor:
         self.corpus = self.tokenizer()
         # call stopword remover
         self.corpus = self.stopword_remover()
+
+# STEMMING/LEMMATIZING TEXT
+def stem_corpus(corpus, stemmer_type="Lancaster"): 
+    '''
+        # stemmer type: Lancaster or Porter
+    '''
+    if stemmer_type=="Lancaster":
+        stemmer = LancasterStemmer()
+    else:
+        stemmer = PorterStemmer()
+
+    for i in range(len(corpus)):
+        for j in range(len(corpus[i])):
+            corpus[i][j] = stemmer.stem(corpus[i][j])
+    return corpus
