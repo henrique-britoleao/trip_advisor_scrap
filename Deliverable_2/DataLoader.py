@@ -3,10 +3,12 @@ import pandas as pd
 import os 
 import sys
 import re
-sys.path.append('trip_advisor_scrap/Deliverable_2/utils.py')
-from utils import read_jl_file, extract_details
+import calendar
 
-class TADataLoader2:
+from utils.loader_utils import read_jl_file, extract_details
+from utils.processing_utils import language_filter
+
+class TADataLoader:
 
     def __init__(self, data_file='scrapped_data.jl', 
                 data_path='../Deliverable_1/TA_reviews/scrapped_data'):
@@ -30,6 +32,8 @@ class TADataLoader2:
         if df_reviews.shape[0] != df_reviews.drop_duplicates('review_url').shape[0]:
             raise TypeError(f'Data has {df_reviews.duplicated().sum()}'
                                 ' duplicates and must have 0.')
+
+        df_reviews = language_filter(df_reviews, 'review_content')
 
         #self.dfs_built = True
         self.df_resto = df_restos.dropna(axis=1, how='all')
@@ -64,16 +68,27 @@ class TADataLoader2:
         self.df_review['research_id'] = self.df_review['review_url'].apply(
             lambda x: re.findall(r'\-g(\d+)\-', x)[0]
         )
-        self.df_resto['resto_id'] = self.df_review['review_url'].apply(
+        self.df_review['resto_id'] = self.df_review['review_url'].apply(
             lambda x: re.findall(r'\-d(\d+)\-', x)[0]
         )
 
-        self.df_resto['review_id'] = self.df_review['review_url'].apply(
+        self.df_review['review_id'] = self.df_review['review_url'].apply(
             lambda x: re.findall(r'\-r(\d+)\-', x)[0]
         )
 
-        # update clean state
-        self.review_clean = True
+        # convert review dates to datetime objects
+        months = {month: str(index) for index, month in enumerate(calendar.month_name) if month}
+        self.df_review['review_month'] = self.df_review['review_date'].apply(
+            lambda x: x.strip().split(' ')[0] if x is not None else x)
+        self.df_review['review_month'] = self.df_review['review_month'].replace(months)
+        self.df_review['review_year'] = self.df_review['review_date'].apply(
+            lambda x: x.strip().split(' ')[1] if x is not None else x)
+        self.df_review['review_date'] = self.df_review['review_month'] + '-01-' + self.df_review['review_year']
+        self.df_review['review_date'] = pd.to_datetime(self.df_review['review_date'])
+        self.df_review.drop(columns=['review_year', 'review_month'], inplace=True)
+
+        # add review length
+        self.df_review['review_length'] = self.df_review['review_content'].apply(lambda x: len(x))
 
     def clean_resto(self):
         '''
@@ -112,7 +127,7 @@ class TADataLoader2:
         '''
         # TODO
         '''
-        
+
         self.build_df()
         self.clean_resto()
 

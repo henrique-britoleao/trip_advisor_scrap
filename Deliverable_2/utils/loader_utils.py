@@ -36,4 +36,4 @@ def extract_details(df):
             
     df.columns = [col.lower() for col in df.columns]
 
-    return df
+    return df.drop(columns=['resto_keys', 'resto_details'])

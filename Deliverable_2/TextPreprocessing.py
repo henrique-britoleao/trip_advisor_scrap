@@ -5,35 +5,11 @@ from nltk import word_tokenize
 from nltk.corpus import stopwords
 import re
 import string
-import pycld2 as cld2
+import cld2
+from utils.processing_utils import get_char_sentence, get_char_corpus
 
-#char set function
-# TODO in new doc
-def get_char_sentence(sentence): 
-    '''
-    # TODO 
-    '''
-    chars = set()
-    char_list = list(sentence)
 
-    for char in char_list:
-        chars.add(char)
-
-    return chars
-
-def get_char_corpus(corpus):
-    '''
-    # TODO
-    '''
-    chars = set()
-
-    for sentence in corpus:
-        sent_char = get_char_sentence(sentence)
-        chars.update(sent_char)
-
-    return chars
-
-#preprocessing class
+# preprocessing class
 class TextPreprocessor:
 
     def __init__(self, df_to_clean, column_to_clean='review_content', 
@@ -85,26 +61,26 @@ class TextPreprocessor:
 
         return sentence
     
-    def language_filter(self):
-        '''
-        # TODO
-        '''
-        if type(self.lang) is not list:
-            raise TypeError(f'lang must be a list, but is a {type(self.lang)}')
-        else:
-            langs = np.array([cld2.detect(review)[2] for review in self.corpus], 
-                        dtype=object) # get list of langs detected in phrase
-            # create filter
-            filt = langs[:,0,0] == self.lang[0]
-            for language in self.lang: # iterate over list of languages
-                filt = filt | (langs[:,0,0] == language)
+    #def language_filter(self):
+      #  '''
+      #  # TODO
+      #  '''
+      #  if type(self.lang) is not list:
+      #      raise TypeError(f'lang must be a list, but is a {type(self.lang)}')
+      #  else:
+      #      langs = np.array([cld2.detect(review)[2] for review in self.corpus], 
+      #                  dtype=object) # get list of langs detected in phrase
+      #      # create filter
+       #     filt = langs[:,0,0] == self.lang[0]
+       #     for language in self.lang: # iterate over list of languages
+       #         filt = filt | (langs[:,0,0] == language)
             
             # make sure no secong language included
-            filt = filt & (langs[:,1,0] == 'Unknown')
+       #     filt = filt & (langs[:,1,0] == 'Unknown')
             
-            filtered_corpus = np.array(self.corpus)[filt]
+       #     filtered_corpus = np.array(self.corpus)[filt]
             
-            return list(filtered_corpus)
+        #    return list(filtered_corpus)
 
     def accent_transformer(self):
         '''
@@ -160,7 +136,7 @@ class TextPreprocessor:
         # call decontractor
         self.corpus = [self.decontractor(review) for review in self.corpus]
         # call language check 
-        self.corpus = self.language_filter()
+        #self.corpus = self.language_filter()
         # call accent_tranformer
         self.corpus = self.accent_transformer()
         # call character filter
