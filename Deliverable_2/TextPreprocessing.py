@@ -8,36 +8,53 @@ import re
 import string
 from Utils.processing_utils import get_char_sentence, get_char_corpus
 
-# PREPROCESSING TEXT
 class TextPreprocessor:
+    '''
+    Class to preprocess the text of the reviews obtained from Trip Advisor
 
+    Parameters
+    ----------
+    df_to_clean: pd.DataFrame
+        df containg reviews
+    column_to_clean: str
+        name of the column of the df containing reviews
+    chars: str
+        list of characters that are acceptable. All other characters will
+        not be kept. 
+
+    Attributes
+    ----------
+    df_to_clean: pd.DataFrame
+        df containg reviews
+    column_to_clean: str
+        name of the column of the df containing reviews
+    chars: str
+        list of characters that are acceptable
+    corpus: list
+        list containing all reviews 
+    
+    '''
     def __init__(self, df_to_clean, column_to_clean='review_content', 
                  chars=string.ascii_lowercase + string.digits + " "):
         self.df_to_clean = df_to_clean
         self.column_to_clean = column_to_clean
-        self.corpus = self.corpus_creator()
+        self.corpus = self._corpus_creator()
         self.chars = chars
 
-    def corpus_creator(self):
-        '''
-        #TODO
-        '''
+    def _corpus_creator(self):
+        '''Returns a list with all reviews in the column of df_to_clean.'''
         corpus = self.df_to_clean[self.column_to_clean].tolist()
 
         return corpus
 
-    def lowercase_transformer(self):
-        '''
-        #TODO
-        '''
+    def _lowercase_transformer(self):
+        '''Returns corpus with only lower-case characters.'''
         corpus = [review.lower() for review in self.corpus]
 
         return corpus
     
     def decontractor(self, sentence): 
-        '''
-        #TODO
-        '''
+        '''Returns sentence without contractions'''
 
         # punctuation mistake 
         sentence = re.sub(r"’", "'", sentence)
@@ -58,23 +75,19 @@ class TextPreprocessor:
 
         return sentence
 
-    def accent_transformer(self):
-        '''
-        # TODO
-        '''
-        transform_dict = {'ú':'u', 'ß':'s', 'î':'i', 'í':'i', 'è':'e', 'ö':'o', 
-                        'é':'e','ï':'i', 'ê':'e', 'ť':'t', 'ü':'u', 'ó':'o', 
-                        'ñ':'n', 'ć':'c','ù':'u', 'ț':'t', 'û':'u', 'â':'a', 
-                        'ô':'o', 'à':'a', 'á':'a','ĺ':'l', 'ç':'c', 'ď':'d', 
-                        'е':'e', 'ı':'i'}
+    def _accent_transformer(self):
+        '''Returns corpus without accents.'''
+        transform_dict = {'ú':'u', 'î':'i', 'í':'i', 'è':'e', 'ö':'o', 'ı':'i', 
+                          'é':'e','ï':'i', 'ê':'e', 'ť':'t', 'ü':'u', 'ó':'o', 
+                          'ñ':'n', 'ć':'c','ù':'u', 'ț':'t', 'û':'u', 'â':'a', 
+                          'ô':'o', 'à':'a', 'á':'a','ĺ':'l', 'ç':'c', 'ď':'d', 
+                          'е':'e'}
         transformer = str.maketrans(transform_dict)
         
         return [review.translate(transformer) for review in self.corpus]
 
-    def char_filter(self):
-        '''
-        # TODO
-        '''
+    def _char_filter(self):
+        '''Returns corpus with only the allowed characters'''
         corpus_chars = get_char_corpus(self.corpus)
         set_chars = get_char_sentence(self.chars)
 
@@ -85,18 +98,14 @@ class TextPreprocessor:
 
         return [review.translate(transformer) for review in self.corpus]
 
-    def tokenizer(self):
-        '''
-        # TODO
-        '''
+    def _tokenizer(self):
+        '''Returns tokenized corpus.'''
         corpus = [word_tokenize(review) for review in self.corpus]
 
         return corpus
 
-    def stopword_remover(self):
-        '''
-        # TODO
-        '''
+    def _stopword_remover(self):
+        '''Returns corpus without stopwrods.'''
         #create list of stopwords to remove
         stopword_list = stopwords.words('english')
 
@@ -108,29 +117,47 @@ class TextPreprocessor:
 
     def transform(self):
         # call lowercase
-        self.corpus = self.lowercase_transformer()
+        self.corpus = self._lowercase_transformer()
         # call decontractor
         self.corpus = [self.decontractor(review) for review in self.corpus]
         # call accent_tranformer
-        self.corpus = self.accent_transformer()
+        self.corpus = self._accent_transformer()
         # call character filter
-        self.corpus = self.char_filter()
+        self.corpus = self._char_filter()
         # call tokenizer
-        self.corpus = self.tokenizer()
+        self.corpus = self._tokenizer()
         # call stopword remover
-        self.corpus = self.stopword_remover()
+        self.corpus = self._stopword_remover()
 
 # STEMMING/LEMMATIZING TEXT
 def stem_corpus(corpus, stemmer_type="Lancaster"): 
     '''
-        # stemmer type: Lancaster or Porter
+    Applies a stemmer to a tokenized corpus
+
+    Parameters
+    ----------
+    corpus: list
+        corpus to be stemmed
+    stemmer_type: str
+        stemmer to be used. Must be either "Lancaster" or 
+        "Porter"
+
+    Returns
+    -------
+    corpus: list
+        stemmed corpus
     '''
     if stemmer_type=="Lancaster":
         stemmer = LancasterStemmer()
-    else:
+    elif stemmer_type=="Porter":
         stemmer = PorterStemmer()
+    else:
+        raise TypeError(
+            'stemmer_type must be either "Lancaster" or "Porter"'
+        )
 
     for i in range(len(corpus)):
         for j in range(len(corpus[i])):
             corpus[i][j] = stemmer.stem(corpus[i][j])
+    
     return corpus

@@ -4,7 +4,35 @@ import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 
 def show_wordcloud(corpus, ratings=None, filter_rating=None):
+    '''
+    Shows a wordcloud with the text contained in courpus.
+
+    Parameters
+    ----------
+    corpus: list
+        corpus containing text to be plotted
+    ratings: pd.Series
+        column containing ratings of each review
+    filter_rating: 
+        rating to be filtered 
+    
+    Returns
+    -------
+    None 
+
+    '''
+    # filter ratings
     if filter_rating is not None:
+        if ratings is None:
+            raise ValueError('ratings must not be None to filter ratings')
+        
+        unique_ratings = ratings.unique()
+
+        if filter_rating not in unique_ratings:
+            raise ValueError(
+                f'filter_rating must be one of {unique_ratings}'
+            )
+
         rating_idx = np.where(ratings==filter_rating)[0]
         corpus = corpus.copy()
         corpus = [corpus[i] for i in rating_idx]
