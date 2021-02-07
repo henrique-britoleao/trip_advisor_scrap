@@ -6,3 +6,6 @@ logzero
 jupyter
 scrapy
 requests
+nltk
+pycld2
+wordcloud

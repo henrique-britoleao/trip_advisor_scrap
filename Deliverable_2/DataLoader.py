@@ -5,20 +5,49 @@ import sys
 import re
 import calendar
 
-from utils.loader_utils import read_jl_file, extract_details
-from utils.processing_utils import language_filter
-
+from Utils.loader_utils import read_jl_file, extract_details, get_resto_id, convert_date
+from Utils.processing_utils import language_filter
+###############################################################################
 class TADataLoader:
+    '''
+    Class used to load the data scraped from Trip Advisor using the spider 
+    contained in Deliverable 1. 
 
+    Parameters
+    ----------
+    data_file: str
+        name of the file containing data
+    data_path: str 
+        path to data_file
+
+    Attributes
+    ----------
+    data_file: str
+        name of the file containing data
+    data_path: str 
+        path to data_file
+    df_resto: pandas.DataFrame
+        contains the restaurant information scrapped
+    df_reviews: pandas.DataFrame
+        contains the review information scrapped
+    __dfs_built: Bool
+        indicates if df_resto and df_reviews have been build
+    __review_clean: Bool
+        indicates if df_reviews has been cleaned
+    __resto_clean: Bool
+        indicates if df_resto has been cleaned
+
+    '''
     def __init__(self, data_file='scrapped_data.jl', 
                 data_path='../Deliverable_1/TA_reviews/scrapped_data'):
         self.data_file = data_file
         self.data_path = data_path
+        self.__dfs_built = False
+        self.__review_clean = False
+        self.__resto_clean = False
 
-    def build_df(self):
-        '''
-        # TODO
-        '''
+    def _build_df(self):
+        '''Builds data frames from .jl file and store them in class.'''
         data = read_jl_file(os.path.join(self.data_path,self.data_file))
 
         df = pd.DataFrame(data)
@@ -26,23 +55,19 @@ class TADataLoader:
         df_reviews = df[df['review_url'].notnull()] # unique to review
 
         # check there are no duplicates
-        if df_restos.shape[0] != df_restos.drop_duplicates('resto_url').shape[0]:
-            raise TypeError(f'Data has {df_restos.duplicated().sum()}'
-                                ' duplicates and must have 0.')
-        if df_reviews.shape[0] != df_reviews.drop_duplicates('review_url').shape[0]:
-            raise TypeError(f'Data has {df_reviews.duplicated().sum()}'
-                                ' duplicates and must have 0.')
+        if df_restos['resto_url'].duplicated().sum() > 0:
+            raise TypeError('Data has duplicated restaurants.')
+        if df_reviews['review_url'].duplicated().sum() > 0:
+            raise TypeError('Data has duplicated reviews.')
 
         df_reviews = language_filter(df_reviews, 'review_content')
 
-        #self.dfs_built = True
+        self.__dfs_built = True
         self.df_resto = df_restos.dropna(axis=1, how='all')
         self.df_review = df_reviews.dropna(axis=1, how='all')
 
-    def clean_review(self):
-        '''
-        # TODO
-        '''
+    def _clean_review(self):
+        '''Cleans self.df_reviews.'''
         # transform resto_name
         self.df_review['resto_name'] = self.df_review["resto_name"].apply(
             lambda x: x[0]
@@ -63,48 +88,30 @@ class TADataLoader:
         self.df_review['review_rating'] = (
             self.df_review['review_rating'].apply(lambda x: int(x[-2]))
         )
-
         # extract research ID
-        self.df_review['research_id'] = self.df_review['review_url'].apply(
-            lambda x: re.findall(r'\-g(\d+)\-', x)[0]
-        )
-        self.df_review['resto_id'] = self.df_review['review_url'].apply(
-            lambda x: re.findall(r'\-d(\d+)\-', x)[0]
-        )
+        self.df_review = get_resto_id(self.df_review, 'review')
 
         self.df_review['review_id'] = self.df_review['review_url'].apply(
             lambda x: re.findall(r'\-r(\d+)\-', x)[0]
         )
 
         # convert review dates to datetime objects
-        months = {month: str(index) for index, month in enumerate(calendar.month_name) if month}
-        self.df_review['review_month'] = self.df_review['review_date'].apply(
-            lambda x: x.strip().split(' ')[0] if x is not None else x)
-        self.df_review['review_month'] = self.df_review['review_month'].replace(months)
-        self.df_review['review_year'] = self.df_review['review_date'].apply(
-            lambda x: x.strip().split(' ')[1] if x is not None else x)
-        self.df_review['review_date'] = self.df_review['review_month'] + '-01-' + self.df_review['review_year']
-        self.df_review['review_date'] = pd.to_datetime(self.df_review['review_date'])
-        self.df_review.drop(columns=['review_year', 'review_month'], inplace=True)
+        self.df_review = convert_date(self.df_review)
 
         # add review length
         self.df_review['review_length'] = self.df_review['review_content'].apply(lambda x: len(x))
 
-    def clean_resto(self):
-        '''
-        # TODO
-        '''
+        # set bool to reflect operation was performed
+        self.__review_clean = True
+
+    def _clean_resto(self):
+        '''Cleans self.df_resto.'''
         # transform resto_name
         self.df_resto['resto_name'] = self.df_resto['resto_name'].apply(
             lambda x: x[0]
         )
         # extract research ID
-        self.df_resto['research_id'] = self.df_resto['resto_url'].apply(
-            lambda x: re.findall(r'\-g(\d+)\-', x)[0]
-        )
-        self.df_resto['resto_id'] = self.df_resto['resto_url'].apply(
-            lambda x: re.findall(r'\-d(\d+)\-', x)[0]
-        )
+        self.df_resto = get_resto_id(self.df_resto, 'resto')
 
         # extract rating
         self.df_resto['resto_rating'] = self.df_resto['resto_rating'].apply(
@@ -112,23 +119,24 @@ class TADataLoader:
         )
         # extract additional information
         self.df_resto = extract_details(self.df_resto)
+
+        # set bool to reflect operation was performed
+        self.__resto_clean = True
     
     def load_reviews(self):
-        '''
-        # TODO
-        '''
-
-        self.build_df()
-        self.clean_review()
+        '''Returns data frame with review data.'''
+        if not self.__dfs_built:
+            self._build_df()
+        if not self.__review_clean:
+            self._clean_review()
 
         return self.df_review
     
     def load_restos(self):
-        '''
-        # TODO
-        '''
-
-        self.build_df()
-        self.clean_resto()
+        '''Returns data frame with restaurant data.'''
+        if not self.__dfs_built:
+            self._build_df()
+        if not self.__resto_clean:
+            self._clean_resto()
 
         return self.df_resto       

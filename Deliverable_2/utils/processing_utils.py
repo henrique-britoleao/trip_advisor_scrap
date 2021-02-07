@@ -1,6 +1,6 @@
 import numpy as np
-import cld2
-
+import pycld2 as cld2
+ 
 # char set function
 def get_char_sentence(sentence): 
     '''
