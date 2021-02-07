@@ -194,7 +194,6 @@ class LemmatizeCorpus:
     
     Attributes
     ----------
-    
     corpus: list
         list containing all reviews
     
