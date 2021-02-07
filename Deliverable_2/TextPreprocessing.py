@@ -14,7 +14,7 @@ nltk.download('averaged_perceptron_tagger')
 # other textpreprocessing functions
 import re
 import string
-from Utils.processing_utils import get_char_sentence, get_char_corpus
+from utils.processing_utils import get_char_sentence, get_char_corpus
 
 class TextPreprocessor:
     '''
