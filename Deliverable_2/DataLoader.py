@@ -8,7 +8,6 @@ import calendar
 from utils.loader_utils import read_jl_file, extract_details, get_resto_id, convert_date
 from utils.processing_utils import language_filter
 
-###############################################################################
 class TADataLoader:
     '''
     Class used to load the data scraped from Trip Advisor using the spider 
@@ -100,7 +99,9 @@ class TADataLoader:
         self.df_review = convert_date(self.df_review)
 
         # add review length
-        self.df_review['review_length'] = self.df_review['review_content'].apply(lambda x: len(x))
+        self.df_review['review_length'] = self.df_review['review_content'].apply(
+            lambda x: len(x)
+        )
 
         # set bool to reflect operation was performed
         self.__review_clean = True
