@@ -42,6 +42,7 @@ class TextPreprocessor:
         list containing all reviews 
     
     '''
+
     def __init__(self, df_to_clean, column_to_clean='review_content', 
                  chars=string.ascii_lowercase + string.digits + " "):
         self.df_to_clean = df_to_clean
@@ -118,8 +119,9 @@ class TextPreprocessor:
         stopword_list = stopwords.words('english')
 
         #remove stopwords
-        corpus = [[token for token in tokenized_review if token not in stopword_list] 
-                        for tokenized_review in self.corpus]
+        corpus = [[token for token in tokenized_review 
+                   if token not in stopword_list] 
+                   for tokenized_review in self.corpus]
         
         return corpus
 
@@ -154,6 +156,7 @@ def stem_corpus(corpus, stemmer_type="Lancaster"):
     -------
     corpus: list
         stemmed corpus
+
     '''
     if stemmer_type=="Lancaster":
         stemmer = LancasterStemmer()
@@ -203,6 +206,7 @@ class LemmatizeCorpus:
         return res_words
 
     def lemmatize_corpus(self):
-        lemmatized_corpus = [self.lemmatize_sentence(sentence) for sentence in self.corpus]
+        lemmatized_corpus = [self.lemmatize_sentence(sentence) 
+                             for sentence in self.corpus]
         return lemmatized_corpus
 
