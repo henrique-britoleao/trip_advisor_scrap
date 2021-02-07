@@ -174,12 +174,34 @@ def stem_corpus(corpus, stemmer_type="Lancaster"):
 
 # LEMMATIZING TEXT
 class LemmatizeCorpus:
+    '''
+    Class to lemmatize preprocessed corpus
+
+    Parameters
+    ----------
+    lemmatizer: function
+        lemmatizer to be used
+    
+    corpus: list
+        list containing all reviews
+    
+    Attributes
+    ----------
+    
+    corpus: list
+        list containing all reviews
+    
+    sentence: str
+        sentence to be lemmatized
+
+    '''
 
     def __init__(self, corpus):
         self.lemmatizer = WordNetLemmatizer()
         self.corpus = corpus
 
     def nltk2wn_tag(self, nltk_tag):
+        '''Returns WORDNET POS compliance to WORDENT lemmatization (a,n,r,v).'''
         if nltk_tag.startswith('J'):
             return wordnet.ADJ
         elif nltk_tag.startswith('V'):
@@ -192,6 +214,7 @@ class LemmatizeCorpus:
             return None
 
     def lemmatize_sentence(self, sentence):
+        '''Returns lemmatized sentence as list.'''
         sentence = sentence.copy()
         sentence = " ".join(sentence)
         nltk_tagged = nltk.pos_tag(nltk.word_tokenize(sentence))    
@@ -206,6 +229,7 @@ class LemmatizeCorpus:
         return res_words
 
     def lemmatize_corpus(self):
+        '''Returns lemmatized corpus as list.'''
         lemmatized_corpus = [self.lemmatize_sentence(sentence) 
                              for sentence in self.corpus]
         return lemmatized_corpus
