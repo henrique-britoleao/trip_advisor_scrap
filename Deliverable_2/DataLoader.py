@@ -5,8 +5,9 @@ import sys
 import re
 import calendar
 
-from Utils.loader_utils import read_jl_file, extract_details, get_resto_id, convert_date
-from Utils.processing_utils import language_filter
+from utils.loader_utils import read_jl_file, extract_details, get_resto_id, convert_date
+from utils.processing_utils import language_filter
+
 ###############################################################################
 class TADataLoader:
     '''

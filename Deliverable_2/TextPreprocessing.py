@@ -9,6 +9,7 @@ from nltk.corpus import stopwords
 from nltk.stem import LancasterStemmer, PorterStemmer
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
+from nltk.util import ngrams
 nltk.download('averaged_perceptron_tagger')
 
 # other textpreprocessing functions
@@ -42,7 +43,6 @@ class TextPreprocessor:
         list containing all reviews 
     
     '''
-
     def __init__(self, df_to_clean, column_to_clean='review_content', 
                  chars=string.ascii_lowercase + string.digits + " "):
         self.df_to_clean = df_to_clean
@@ -107,25 +107,33 @@ class TextPreprocessor:
 
         return [review.translate(transformer) for review in self.corpus]
 
-    def _tokenizer(self):
+    def _ngrams(self, review, n):
+        '''Returns n-grams tokenized corpus.'''
+        n_grams = ngrams(nltk.tokenize.word_tokenize(review), n)
+
+        return [' '.join(grams) for grams in n_grams]
+
+    def _tokenizer(self, n_grams):
         '''Returns tokenized corpus.'''
-        corpus = [word_tokenize(review) for review in self.corpus]
+        if n_grams:
+            corpus = [word_tokenize(review)+ self._ngrams(review, 2)+ self._ngrams(review, 3) for review in self.corpus]
+        else:
+            corpus = [word_tokenize(review) for review in self.corpus]
 
         return corpus
 
     def _stopword_remover(self):
-        '''Returns corpus without stopwrods.'''
+        '''Returns corpus without stopwords.'''
         #create list of stopwords to remove
         stopword_list = stopwords.words('english')
 
         #remove stopwords
-        corpus = [[token for token in tokenized_review 
-                   if token not in stopword_list] 
-                   for tokenized_review in self.corpus]
+        corpus = [[token for token in tokenized_review if token not in stopword_list] 
+                        for tokenized_review in self.corpus]
         
         return corpus
 
-    def transform(self):
+    def transform(self, n_grams= False):
         # call lowercase
         self.corpus = self._lowercase_transformer()
         # call decontractor
@@ -135,7 +143,7 @@ class TextPreprocessor:
         # call character filter
         self.corpus = self._char_filter()
         # call tokenizer
-        self.corpus = self._tokenizer()
+        self.corpus = self._tokenizer(n_grams)
         # call stopword remover
         self.corpus = self._stopword_remover()
 
@@ -156,7 +164,6 @@ def stem_corpus(corpus, stemmer_type="Lancaster"):
     -------
     corpus: list
         stemmed corpus
-
     '''
     if stemmer_type=="Lancaster":
         stemmer = LancasterStemmer()
@@ -206,7 +213,6 @@ class LemmatizeCorpus:
         return res_words
 
     def lemmatize_corpus(self):
-        lemmatized_corpus = [self.lemmatize_sentence(sentence) 
-                             for sentence in self.corpus]
+        lemmatized_corpus = [self.lemmatize_sentence(sentence) for sentence in self.corpus]
         return lemmatized_corpus
 

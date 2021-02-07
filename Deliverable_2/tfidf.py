@@ -50,8 +50,9 @@ def tf_idf(corpus, n=15, barplot=True, wordcloud=False):
     
     '''
     # apply TF-IDF to corpus
+    untokenized_corpus = [" ".join(words) for words in corpus]
     vectorizer = TfidfVectorizer(stop_words='english')
-    vect_corpus = vectorizer.fit_transform(corpus)
+    vect_corpus = vectorizer.fit_transform(untokenized_corpus)
     # retrieve words
     feature_names = np.array(vectorizer.get_feature_names())
     # represent data as a data frame
