@@ -156,6 +156,7 @@ def stem_corpus(corpus, stemmer_type="Lancaster"):
     -------
     corpus: list
         stemmed corpus
+
     '''
     if stemmer_type=="Lancaster":
         stemmer = LancasterStemmer()
@@ -173,19 +174,7 @@ def stem_corpus(corpus, stemmer_type="Lancaster"):
 
 # LEMMATIZING TEXT
 class LemmatizeCorpus:
-    '''
-    Applies a lemmatizer to a tokenized corpus
 
-    Parameters
-    ----------
-    corpus: list
-        corpus to be lemmatized
-
-    Returns
-    -------
-    corpus: list
-        lemmatized corpus
-    '''
     def __init__(self, corpus):
         self.lemmatizer = WordNetLemmatizer()
         self.corpus = corpus
