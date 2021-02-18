@@ -3,9 +3,7 @@ import cld2
  
 # char set function
 def get_char_sentence(sentence): 
-    '''
-    # TODO 
-    '''
+    '''Returns a set of unique characters in a string'''
     chars = set()
     char_list = list(sentence)
 
@@ -15,9 +13,7 @@ def get_char_sentence(sentence):
     return chars
 
 def get_char_corpus(corpus):
-    '''
-    # TODO
-    '''
+    '''Returns a set of unique characters in a list of strings'''
     chars = set()
 
     for sentence in corpus:
@@ -29,7 +25,22 @@ def get_char_corpus(corpus):
 # filter out non-English comments
 def language_filter(df, column_to_clean, lang=['ENGLISH', 'Unknown', 'ZHUANG']):
     '''
-    # TODO
+    Filters reviews from different languages
+
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        df to be cleaned
+    column_to_clean: str
+        name of the column containing the text to be filtered
+    lang: list
+        list of acceptable languages
+    
+    Returns
+    -------
+    filtered_df: pandas.DataFrame
+        original df filtered for the correct languages
+        
     '''
     if type(lang) is not list:
         raise TypeError(f'lang must be a list, but is a {type(lang)}')
