@@ -1,6 +1,7 @@
 import scrapy
 from TA_reviews.items import TAReview, TAResto
 from TA_reviews.utils.get_current_page import get_current_page
+from TA_reviews.utils.ratings_mapper import ratings_mapper
 
 class RestoPerso(scrapy.Spider):
     '''
@@ -14,8 +15,9 @@ class RestoPerso(scrapy.Spider):
 
         self.page_nb = 1 
         self.review_page_nb = 1 
-        self.max_page = 4 # 30 restaurants per page
+        self.max_page = 6 # 30 restaurants per page
         self.max_review_pages = 50 # 10 reviews per page
+        self.filter = [1, 2, 3, 4] # TODO: make it a parameter
 
     def start_requests(self):
         '''Submits first request to Spider to crawl'''
@@ -96,9 +98,20 @@ class RestoPerso(scrapy.Spider):
         # get review urls
         xpath_review_url = '//div[@class="reviewSelector"]/div/div/div/a/@href'
         urls_review = response.xpath(xpath_review_url).extract()
-        for url_review in urls_review:
-                yield response.follow(url=url_review, callback=self.parse_review,
-                                      cb_kwargs={'resto_name':resto_name})    
+        
+        # get review ratings
+        xpath_review_rating = '//div[@class="reviewSelector"]//div[@class=' \
+                              '"ui_column is-9"]/span[1]/@class'
+        review_ratings = response.xpath(xpath_review_rating).extract()
+        # clean ratings 
+        review_ratings_mapped = ratings_mapper(review_ratings)
+
+        for (url, rating) in zip(urls_review, review_ratings_mapped):
+            if rating in self.filter:
+                yield response.follow(url=url, callback=self.parse_review, 
+                                      cb_kwargs={'resto_name':resto_name})
+            else:
+                pass    
         
         # move to next page
         xpath_next = '//a[@class="nav next ui_button primary"]/@data-page-number'
