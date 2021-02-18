@@ -6,11 +6,7 @@ import numpy as np
 import nltk
 from nltk import word_tokenize
 from nltk.corpus import stopwords
-from nltk.stem import LancasterStemmer, PorterStemmer
-from nltk.stem import WordNetLemmatizer
-from nltk.corpus import wordnet
 from nltk.util import ngrams
-nltk.download('averaged_perceptron_tagger')
 
 # other textpreprocessing functions
 import re
@@ -61,7 +57,18 @@ class TextPreprocessor:
         corpus = [review.lower() for review in self.corpus]
 
         return corpus
-    
+  
+    def _digit_transformer(self):
+        '''Returns corpus with written digits.'''
+        transform_dict = {'1':'one ', '2': 'two ', '3': 'three ',
+                          '4': 'four ', '5': 'five ', '6': 'six ',
+                          '7': 'seven ', '8': 'eight ', '9': 'nine ',
+                          '0': 'zero '}
+        
+        transformer = str.maketrans(transform_dict)
+        
+        return [review.translate(transformer) for review in self.corpus]
+
     def decontractor(self, sentence): 
         '''Returns sentence without contractions'''
 
@@ -133,110 +140,25 @@ class TextPreprocessor:
         
         return corpus
 
-    def transform(self, n_grams= False):
+    def transform(self, tokenize=True,remove_stopwords=False, n_grams=False):
         # call lowercase
         self.corpus = self._lowercase_transformer()
+        # call digit_tranformer
+        self.corpus = self._digit_transformer()
         # call decontractor
         self.corpus = [self.decontractor(review) for review in self.corpus]
         # call accent_tranformer
         self.corpus = self._accent_transformer()
         # call character filter
         self.corpus = self._char_filter()
-        # call tokenizer
-        self.corpus = self._tokenizer(n_grams)
-        # call stopword remover
-        self.corpus = self._stopword_remover()
-
-# STEMMING TEXT
-def stem_corpus(corpus, stemmer_type="Lancaster"): 
-    '''
-    Applies a stemmer to a tokenized corpus
-
-    Parameters
-    ----------
-    corpus: list
-        corpus to be stemmed
-    stemmer_type: str
-        stemmer to be used. Must be either "Lancaster" or 
-        "Porter"
-
-    Returns
-    -------
-    corpus: list
-        stemmed corpus
-    '''
-    if stemmer_type=="Lancaster":
-        stemmer = LancasterStemmer()
-    elif stemmer_type=="Porter":
-        stemmer = PorterStemmer()
-    else:
-        raise TypeError(
-            'stemmer_type must be either "Lancaster" or "Porter"'
-        )
-
-    for i in range(len(corpus)):
-        for j in range(len(corpus[i])):
-            corpus[i][j] = stemmer.stem(corpus[i][j])
-    return corpus
-
-# LEMMATIZING TEXT
-class LemmatizeCorpus:
-    '''
-    Class to lemmatize preprocessed corpus
-
-    Parameters
-    ----------
-    lemmatizer: function
-        lemmatizer to be used
-    
-    corpus: list
-        list containing all reviews
-    
-    Attributes
-    ----------
-    corpus: list
-        list containing all reviews
-    
-    sentence: str
-        sentence to be lemmatized
-
-    '''
-
-    def __init__(self, corpus):
-        self.lemmatizer = WordNetLemmatizer()
-        self.corpus = corpus
-
-    def nltk2wn_tag(self, nltk_tag):
-        '''Returns WORDNET POS compliance to WORDENT lemmatization (a,n,r,v).'''
-        if nltk_tag.startswith('J'):
-            return wordnet.ADJ
-        elif nltk_tag.startswith('V'):
-            return wordnet.VERB
-        elif nltk_tag.startswith('N'):
-            return wordnet.NOUN
-        elif nltk_tag.startswith('R'):
-            return wordnet.ADV
-        else:                    
-            return None
-
-    def lemmatize_sentence(self, sentence):
-        '''Returns lemmatized sentence as list.'''
-        sentence = sentence.copy()
-        sentence = " ".join(sentence)
-        nltk_tagged = nltk.pos_tag(nltk.word_tokenize(sentence))    
-        wn_tagged = map(lambda x: (x[0], self.nltk2wn_tag(x[1])), nltk_tagged)
-        res_words = []
-        for word, tag in wn_tagged:
-            if tag is None:                        
-                res_words.append(word)
+        
+        if tokenize:
+            # call tokenizer
+            self.corpus = self._tokenizer(n_grams)
+        
+        if remove_stopwords:
+            if tokenize:
+                # call stopword remover
+                self.corpus = self._stopword_remover()
             else:
-                res_words.append(self.lemmatizer.lemmatize(word, tag))
-
-        return res_words
-
-    def lemmatize_corpus(self):
-        '''Returns lemmatized corpus as list.'''
-        lemmatized_corpus = [self.lemmatize_sentence(sentence) 
-                             for sentence in self.corpus]
-        return lemmatized_corpus
-
+                raise ValueError('To remove stopwords, tokenize must be True')

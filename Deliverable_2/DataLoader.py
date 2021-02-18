@@ -46,19 +46,22 @@ class TADataLoader:
         self.__review_clean = False
         self.__resto_clean = False
 
-    def _build_df(self):
+    def _build_df(self, ignore_duplicates=False):
         '''Builds data frames from .jl file and store them in class.'''
         data = read_jl_file(os.path.join(self.data_path,self.data_file))
 
         df = pd.DataFrame(data)
         df_restos = df[df['resto_url'].notnull()] # unique to resto
         df_reviews = df[df['review_url'].notnull()] # unique to review
-
+        
         # check there are no duplicates
-        if df_restos['resto_url'].duplicated().sum() > 0:
-            raise TypeError('Data has duplicated restaurants.')
-        if df_reviews['review_url'].duplicated().sum() > 0:
-            raise TypeError('Data has duplicated reviews.')
+        if ignore_duplicates:
+            pass
+        else:
+            if df_restos['resto_url'].duplicated().sum() > 0 :
+                raise TypeError('Data has duplicated restaurants.')
+            if df_reviews['review_url'].duplicated().sum() > 0:
+                raise TypeError('Data has duplicated reviews.')
 
         df_reviews = language_filter(df_reviews, 'review_content')
 
@@ -125,19 +128,33 @@ class TADataLoader:
         # set bool to reflect operation was performed
         self.__resto_clean = True
     
-    def load_reviews(self):
+    def load_reviews(self, drop_duplicates=False):
         '''Returns data frame with review data.'''
         if not self.__dfs_built:
-            self._build_df()
+            if drop_duplicates:
+                self._build_df(ignore_duplicates=True)
+            else:
+                self._build_df()
+      
+        if drop_duplicates:
+            self.df_review.drop_duplicates(subset='review_url', inplace=True)
+
         if not self.__review_clean:
             self._clean_review()
 
         return self.df_review
     
-    def load_restos(self):
+    def load_restos(self, drop_duplicates=False):
         '''Returns data frame with restaurant data.'''
         if not self.__dfs_built:
-            self._build_df()
+            if drop_duplicates:
+                self._build_df(ignore_duplicates=True)
+            else:
+                self._build_df()
+
+        if drop_duplicates:
+            self.df_resto.drop_duplicates(subset='resto_url', inplace=True)
+
         if not self.__resto_clean:
             self._clean_resto()
 
