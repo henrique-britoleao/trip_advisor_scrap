@@ -9,7 +9,7 @@ def plot_barplot(df, n):
     '''Returns None, plots barplot with n most frequent words.'''
     plt.figure(figsize=(12,8))
     plt.title("Frequencies of the %s most frequent words after TF-IDF" %n)
-    sns.barplot(data=df[:n].T).set_xticklabels(labels=df.index,rotation=60)
+    sns.barplot(data=df[:n].T).set_xticklabels(labels=df[:n].index,rotation=60)
 
 
 def plot_wordcloud_tf_idf(df):
