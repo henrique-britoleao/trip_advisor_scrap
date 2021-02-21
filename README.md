@@ -10,6 +10,10 @@
   * [General info](#general-info-1)
   * [Technologies](#technologies-1)
   * [Setup](#setup-1)
+- [Deliverable 3:](#deliverable-3-)
+  * [General info](#general-info-2)
+  * [Technologies](#technologies-2)
+  * [Setup](#setup-2)
 
 
 ## Deliverable 1:
@@ -40,7 +44,7 @@ Performed:
 * Data cleaning
 * Data exploration
 * Tokenization, stemming, and lemmatization 
-* TD-IFD 
+* TF-IDF 
 
 ### Technologies 
 * Python version: 3..
@@ -50,6 +54,29 @@ Performed:
 
 ### Setup
 Make sure to install dependencies before running the notebook. Also make sure that the steps taken in Deliverable 1 have all been taken. 
+```terminal
+pip install -r requirements.txt
+```
+
+## Deliverable 3:
+
+### General info
+Performed data augmentation and embedding methods on the preprocessed data from Deliverable 2. Main delivery in Deliverable3.ipynb
+Performed:
+* Data augmentation
+* Word2Vec
+* LSI
+* FasText
+* SVD
+
+### Technologies 
+* Python version: 3..
+* gensim
+* sklearn
+* nltk
+
+### Setup
+Make sure to install dependencies before running the notebook. Also make sure that the steps taken in Deliverable 2 have all been taken. 
 ```terminal
 pip install -r requirements.txt
 ```
