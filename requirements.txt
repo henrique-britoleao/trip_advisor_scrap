@@ -7,5 +7,5 @@ jupyter
 scrapy
 requests
 nltk
-pycld2
+cld2-cffi
 wordcloud

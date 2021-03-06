@@ -1,2 +1,6 @@
+.idea
+**.vscode
+**__pycache__
+**.ipynb_checkpoints
+**.DS_Store
 Deliverable_3_MB/
-Deliverable_4/
