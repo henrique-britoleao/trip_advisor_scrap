@@ -162,3 +162,11 @@ class TextPreprocessor:
                 self.corpus = self._stopword_remover()
             else:
                 raise ValueError('To remove stopwords, tokenize must be True')
+
+
+# function to split reviews by sentence
+def split_reviews_per_sentence(reviews):
+    reviews["review_sentences"] = reviews['review_content'].progress_apply(
+        lambda rvw: nltk.sent_tokenize(rvw)
+    )
+    return reviews

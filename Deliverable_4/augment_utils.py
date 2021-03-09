@@ -41,7 +41,3 @@ def find_synonym(word):
             return word
     else:
         return word
-
-
-
-    
