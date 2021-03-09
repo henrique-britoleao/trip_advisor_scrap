@@ -1,3 +1,7 @@
+import sys
+sys.path.append('../Deliverable_2/')
+from tfidf import tf_idf
+
 import gensim
 from gensim.test.utils import get_tmpfile
 from sklearn.decomposition import PCA
@@ -11,7 +15,8 @@ from sklearn.decomposition import TruncatedSVD
 class Embeddor:
     '''
     Class to embed the words of the reviews obtained from Trip Advisor
-    Outputs a dataframe with reviews as rows and principal components as columns
+    Outputs a dataframe with reviews as rows and principal components
+    as columns
 
     Parameters
     ----------
@@ -26,31 +31,22 @@ class Embeddor:
     '''
     def __init__(self, corpus):
         self.corpus = corpus
-
-    def tfidf(self):
-        ''' Returns a df with the tfidf vector of each word in the corpus'''
-        untokenized_corpus = [" ".join(map(str, words)) for words in self.corpus]
-        vectorizer = TfidfVectorizer(stop_words='english')
-        vect_corpus = vectorizer.fit_transform(untokenized_corpus)
-        feature_names = np.array(vectorizer.get_feature_names())
-        df_tfidf = pd.DataFrame(vect_corpus.todense(), columns = feature_names)
-
-        return df_tfidf, feature_names
   
-    def pretrained(self, size_embedding=300, vec_method="word2vec"):
-        ''' Returns a df with the word2vec or fasttext vector 
-        of each word in the corpus '''
+    def _pretrained(self, size_embedding=300, vec_method="word2vec"):
+        '''Returns a df of each word embedded using the vec_method.'''
+        # select method of embedding
         if vec_method=="word2vec":
             model = gensim.models.Word2Vec(size=size_embedding, window=3,
                                  min_count=5, workers=4, seed=1, iter=50)
         elif vec_method=="fasttext":
             model = gensim.models.FastText(size=size_embedding, window=3,
                                  min_count=5, workers=4, sg=1, seed=1, iter=50)
-      
+        # train model
         model.build_vocab(self.corpus)
         model.train(self.corpus, total_examples=model.corpus_count, 
                     epochs=model.iter) 
 
+        # build embedding matrix
         embedding_matrix = dict()
 
         for word in model.wv.vocab.keys():
@@ -60,9 +56,8 @@ class Embeddor:
       
         return embedding_matrix, model
  
-    def select_n_components(self, method, var_threshold=0.95):
-        ''' Returns the number of optimal components 
-        to explain a specified ratio of the variance'''
+    def _select_n_components(self, method, var_threshold=0.95):
+        '''Returns the number of optimal components for given variance threshold.'''
         var_ratio = method.explained_variance_ratio_
         total_variance = 0.0
         n_components = 0
@@ -76,12 +71,14 @@ class Embeddor:
 
     def dimension_reduction(self, vec_method="word2vec", how="PCA", 
                             n_components="n_opt", threshold=0.95):
-        ''' Returns the embedding matrix after dimensionality reduction 
-        (SVD or PCA)'''
-        word_vectors = self.embedding_matrix
-        n_max = word_vectors.shape[1]-1
+        '''Returns the embedding matrix after dimensionality reduction.'''
+        
+        # handle translations of the embedding matrix
         if vec_method in ["word2vec", "fasttext"]:
             word_vectors = self.embedding_matrix.T
+            n_max = word_vectors.shape[1]-1
+        else: 
+            word_vectors = self.embedding_matrix
             n_max = word_vectors.shape[1]-1
 
         if n_components == "n_opt":
@@ -96,17 +93,20 @@ class Embeddor:
 
         if n_components == n_max:
             method.fit_transform(word_vectors)            
-            n_components = self.select_n_components(method, 
+            # select best number of components
+            n_components = self._select_n_components(method, 
                                                     var_threshold=threshold)
             print("The optimal number of components is: ", n_components)
             
-            if how == "SVD":
-                method = TruncatedSVD(n_components)
-            elif how == "PCA":
-                method = PCA(n_components)
-            else:
-                raise NameError('"how" has to be in ["PCA", "SVD"]')
-
+        # instantiate dimention reduction class
+        if how == "SVD":
+            method = TruncatedSVD(n_components)
+        elif how == "PCA":
+            method = PCA(n_components)
+        else:
+            raise NameError('"how" has to be in ["PCA", "SVD"]')
+        
+        # fit and transform dimension reduction
         transformed_mat = method.fit_transform(word_vectors)
         transformed_df = pd.DataFrame(transformed_mat, columns=[how[:2] + 
                                       f'{i+1}' for i in range(n_components)])
@@ -162,17 +162,35 @@ class Embeddor:
 
     def transform(self, vec_method="word2vec", how="PCA", n="n_opt", 
                   tsne=True, n_tnse=3, threshold=0.95):
+        '''
+
+        Parameters
+        ----------
+        vec_method: str
+            the embedding method to be employed. Must be: "word2vec",
+            "fasttext", or "tfidf".
+
+        how: str
+            the dimension reduction method to be employed. Must be:
+            "PCA" or "SVD"
+        '''
         #self.corpus = self.corpus
         if vec_method=="tfidf":
-            self.embedding_matrix = self.tfidf()[0]
+            self.embedding_matrix = tf_idf(self.corpus, barplot=False)
             self.review_embedding = self.dimension_reduction(
                                         vec_method=vec_method, how=how, 
                                         n_components=n, threshold=threshold)[1]
 
         elif vec_method in ["word2vec", "fasttext"]:
-            self.embedding_matrix = self.pretrained(vec_method=vec_method)[0]
-            self.model = self.pretrained(vec_method=vec_method)[1]
-            self.transformed_mat, self.transformed_df, self.n_components = self.dimension_reduction(vec_method=vec_method, how=how, n_components=n, threshold=threshold)
+            # embed
+            self.embedding_matrix = self._pretrained(vec_method=vec_method)[0]
+            self.model = self._pretrained(vec_method=vec_method)[1]
+
+            self.transformed_mat, self.transformed_df, self.n_components = (
+                self.dimension_reduction(vec_method=vec_method, how=how, 
+                                         n_components=n, threshold=threshold)
+            )
+
             if tsne:
                 self.tsne_pca_results, self.tsne_pca_df = self.tsne(
                                                     n_components_tsne=n_tnse)
